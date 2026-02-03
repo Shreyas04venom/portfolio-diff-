@@ -11,6 +11,25 @@ import { slideIn } from "../utils/motion";
 // Import MDBootstrap components
 import { MDBFooter } from 'mdb-react-ui-kit';
 
+// Import Firebase
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, addDoc, serverTimestamp } from "firebase/firestore";
+
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyCSOdWZA5K2lGkk2cAeAkFPlOoxotD__S8",
+  authDomain: "signuplogin-4664a.firebaseapp.com",
+  projectId: "signuplogin-4664a",
+  storageBucket: "signuplogin-4664a.firebasestorage.app",
+  messagingSenderId: "598006304340",
+  appId: "1:598006304340:web:f693c315e9a07c1b69a7c1",
+  measurementId: "G-7Z8H3E3W5T"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 const Contact = () => {
   const formRef = useRef();
   const [form, setForm] = useState({
@@ -56,10 +75,29 @@ const Contact = () => {
       message: form.message,
     };
 
+    // Save to Firebase Firestore
+    const saveToFirebase = async () => {
+      try {
+        const docRef = await addDoc(collection(db, "contact_submissions"), {
+          name: form.name,
+          email: form.email,
+          message: form.message,
+          timestamp: serverTimestamp(),
+          createdAt: new Date().toLocaleString()
+        });
+        console.log("Document written with ID: ", docRef.id);
+      } catch (error) {
+        console.error("Error adding document: ", error);
+      }
+    };
+
     // Sending email using EmailJS
     emailjs.send(serviceId, templateId, templateParams, publicKey)
       .then(
-        (response) => {
+        async (response) => {
+          // Save to Firebase after successful email send
+          await saveToFirebase();
+          
           setLoading(false);
           console.log("EmailJS Success:", response);  // Log success response
           alert("Thank you. I will get back to you as soon as possible.");
